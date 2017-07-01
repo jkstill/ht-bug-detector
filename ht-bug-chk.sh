@@ -12,7 +12,7 @@ echo Host to check: $hostToChk
 
 
 cpuFile=ht-bug-cpus.txt
-cpuFile=test-cpu.txt
+#cpuFile=test-cpu.txt
 
 sshCmd=''
 # use eval when on local server to deal with quoting
@@ -23,12 +23,44 @@ evalCmd='eval'
 	evalCmd=''
 }
 
-
 $sshCmd grep -q '^flags.*[[:space:]]ht[[:space:]]' /proc/cpuinfo
 
-# on a virtual machine this will report the correct CPU
-# but there will be no ht flag even if the processor is capable
-# the ht flag will appear only on the OS for the physical server
+: <<'HTDOC'
+
+on a virtual machine the correct CPU will be shown in /proc/cpuingo
+but there will be no ht flag even if the processor is capable
+the ht flag will appear only on the OS for the physical server
+
+in some cases a CPU may be capable of HT, but HT has not been enabled
+the ht flag is then misleading 
+
+example: the following CPU is shown to be ht capable, but ht is not enabled
+
+$ grep 'model name' /proc/cpuinfo| uniq
+model name      : Intel(R) Core(TM) i5-4590 CPU @ 3.30GHz
+
+$ grep "flags" /proc/cpuinfo | uniq | grep -o ' ht '
+ht
+
+$ lscpu
+Architecture:          x86_64
+CPU op-mode(s):        32-bit, 64-bit
+Byte Order:            Little Endian
+CPU(s):                4
+On-line CPU(s) list:   0-3
+Thread(s) per core:    1
+Core(s) per socket:    4
+Socket(s):             1
+NUMA node(s):          1
+Vendor ID:             GenuineIntel
+CPU family:            6
+Model:                 60
+Model name:            Intel(R) Core(TM) i5-4590 CPU @ 3.30GHz
+Stepping:              3
+
+
+
+HTDOC
 
 htCapable=$?
 #echo Result: $htCapable
@@ -39,11 +71,15 @@ gcmd="grep -E 'model name' /proc/cpuinfo | sort -u"
 
 cpuInfo=$($sshCmd $evalCmd $gcmd)
 
-#eval $gcmd
+# ht enabled if result GT 1
+htEnabled=$($sshCmd $evalCmd lscpu | grep "Thread.*per"| awk '{ print $NF }')
+
+#echo htEnabled: $htEnabled
 
 #get exact CPU
-
 cpuModel=$(echo $cpuInfo | grep -of  <( cut -f2 -d: $cpuFile ))
+
+: ${cpuModel:='notaffected'}
 
 echo CPU Info : $cpuInfo
 echo CPU Model: $cpuModel
@@ -59,23 +95,46 @@ echo CPU Model: $cpuModel
 
 }
 
+[[ $htCapable -ge 0 && $htEnabled -eq 1 ]] && {
+	echo 
+	echo "the $cpuInfo is HyperThread capable"
+	echo "however HyperThreading is not enabled on this CPU"
+	echo 
+	exit 0
+}
+
 # now determine the processor architecture
 
 cpuArch=$(grep ":$cpuModel" $cpuFile | cut -f1 -d:)
+: ${cpuArch:='notaffected'}
 
 echo 
 echo CPU Architecture: $cpuArch
 echo
 
+skylakeInfo () {
+	echo 
+	echo This is a skylake CPU
+	echo There is a microcode fix available for some models of skylake
+	echo Please see the following article, and/or contact the appropriate vendors
+	echo "https://lists.debian.org/debian-devel/2017/06/msg00308.html"
+	echo "https://lists.debian.org/debian-devel/2017/06/msg00351.html"
+}
+
+notAffected() {
+	echo
+	echo This CPU is not affected by HyperThread bugs
+	echo
+}
 
 case $cpuArch in
 
-	nolake) echo "This is a test system - comment out the test cpuFile";;
+	notaffected) notAffected;exit 0;;
+	nolake) echo "This is a test system - comment out the test cpuFile"; exit 0;;
 	kabylake) echo "This is Kaby Lake - Disable HT now!";;
-	skylake) echo "more to come - skylake has several choices";;
+	skylake) skylakeInfo; echo "more to come - skylake has several choices";;
 
 esac
-
 
 
 
