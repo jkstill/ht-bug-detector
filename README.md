@@ -43,7 +43,7 @@ The ht-bug-cpus.txt file created:
 
 ### Sanity Checks
 
-'''jupiter $ wc -l ht-bug-cpus.txt
+```jupiter $ wc -l ht-bug-cpus.txt
 179 ht-bug-cpus.txt
 
 jupiter $ wc -l *lake
@@ -53,7 +53,7 @@ jupiter $ wc -l *lake
 
 jupiter $ sort  -u ht-bug-cpus.txt | wc -l
 179
-'''
+```
 
 ## Usage
 
@@ -66,6 +66,7 @@ the username argument is optional for use with ssh
 
 As I don't currently have access to a system with skylake or kabylake processer, these test just show machines that are not subject to the bug
 
+```
 $ ./ht-bug-chk.sh  japp
 Host to check: jap
 CPU Info : model name : Intel(R) Core(TM) i7-4790S CPU @ 3.20GHz
@@ -98,5 +99,5 @@ CPU Model: notaffected
 the model name  : Intel(R) Core(TM) i5-4590 CPU @ 3.30GHz is HyperThread capable
 however HyperThreading is not enabled on this CPU
 
-
+```
 
