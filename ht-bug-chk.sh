@@ -18,8 +18,13 @@ sshCmd=''
 # use eval when on local server to deal with quoting
 evalCmd='eval'
 
+# the '-n' argument to ssh is used to redirect STDIN from /dev/null 
+# this is important when calling from another script, as otherwise ssh will cause the loop in the calling script
+# to end after the first iteration
+
+
 [[ $hostToChk != $HOSTNAME ]] && {
-	sshCmd="ssh $hostUsername@$hostToChk "
+	sshCmd="ssh -n $hostUsername@$hostToChk "
 	evalCmd=''
 }
 
@@ -131,8 +136,8 @@ case $cpuArch in
 
 	notaffected) notAffected;exit 0;;
 	nolake) echo "This is a test system - comment out the test cpuFile"; exit 0;;
-	kabylake) echo "This is Kaby Lake - Disable HT now!";;
-	skylake) skylakeInfo; echo "more to come - skylake has several choices";;
+	kabylake) echo "This is Kaby Lake - Disable HT now!";exit 0;;
+	skylake) skylakeInfo; echo "more to come - skylake has several choices";exit 0;;
 
 esac
 
